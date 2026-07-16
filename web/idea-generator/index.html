@@ -1,1 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Idea Generator — Pick a Path</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --bg:#161220; --surface:#221c30; --card:#2a2338; --text:#f7f1e8; --text-dim:#a89bb5; --cyan:#5eead4; --cyan-glow:#8bf5e4; }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    background:radial-gradient(ellipse at 50% 30%, rgba(94,234,212,0.08), var(--bg) 65%);
+    color:var(--text); font-family:'Space Grotesk',sans-serif;
+    min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:2rem 1.2rem;
+  }
+  .pixel{font-family:'Press Start 2P',monospace;}
+  a.back{ color:var(--text-dim); text-decoration:none; font-size:0.85rem; position:absolute; top:1.5rem; left:1.5rem; }
+  a.back:hover{ color:var(--cyan-glow); }
+  h1{ font-size:1rem; color:var(--cyan-glow); margin-bottom:2rem; text-align:center; }
+  #card{
+    width:min(90vw, 460px); min-height:160px; background:var(--card); border-radius:14px;
+    padding:2.2rem; display:flex; align-items:center; justify-content:center; text-align:center;
+    font-size:1.15rem; line-height:1.5; opacity:1; transition:opacity 0.25s ease, transform 0.25s ease;
+  }
+  #card.fade{ opacity:0; transform:translateY(6px); }
+  #tag{ font-size:0.75rem; color:var(--cyan); letter-spacing:1px; margin-top:1rem; text-align:center; }
+  button{
+    margin-top:1.6rem; background:var(--cyan); color:#161220; border:none;
+    padding:0.8rem 1.8rem; border-radius:8px; font-weight:700; cursor:pointer; font-size:0.95rem;
+  }
+  button:hover{ background:var(--cyan-glow); }
+</style>
+</head>
+<body>
+<a class="back" href="../../index.html">← Back to hub</a>
+<h1 class="pixel">IDEA GENERATOR</h1>
+<div id="card">Press the button for your first idea.</div>
+<div id="tag"></div>
+<button onclick="next()">Give me an idea</button>
+
+<script>
+const IDEAS = [
+  { text:"Build a tool that turns your camera roll into a printable zine.", tag:"weekend project" },
+  { text:"Write down three things that annoyed you this week — one is a startup idea.", tag:"reflection" },
+  { text:"Recreate your favorite childhood game with one deliberate twist.", tag:"weekend project" },
+  { text:"Cook a dish from a country you've never visited, using only what's in your kitchen.", tag:"food" },
+  { text:"Message someone you haven't spoken to in over a year, no reason needed.", tag:"connection" },
+  { text:"Sketch the room you're in from memory after leaving it.", tag:"creative exercise" },
+  { text:"Pick a skill you're bad at and spend 20 minutes being bad at it on purpose.", tag:"growth" },
+  { text:"Turn a recurring complaint into a one-page proposal for fixing it.", tag:"startup idea" },
+  { text:"Write the last page of a book you'll never write the rest of.", tag:"creative exercise" },
+  { text:"Take the long way somewhere today and notice one new thing.", tag:"reflection" },
+  { text:"Teach a five-minute lesson on something you know to someone who doesn't.", tag:"connection" },
+  { text:"Build a tiny web page that does exactly one useful thing, nothing else.", tag:"weekend project" },
+];
+
+/* Seeded shuffle bag (algorithmic-art style): draw without replacement
+   until the bag empties, then reshuffle — avoids back-to-back repeats
+   while still feeling random. */
+function mulberry32(a){
+  return function(){
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+let rand = mulberry32(Date.now() & 0xffffffff);
+let bag = [];
+
+function refillBag(){
+  bag = IDEAS.map((_, i) => i);
+  for(let i = bag.length - 1; i > 0; i--){
+    const j = Math.floor(rand() * (i + 1));
+    [bag[i], bag[j]] = [bag[j], bag[i]];
+  }
+}
+
+const cardEl = document.getElementById('card');
+const tagEl = document.getElementById('tag');
+
+function next(){
+  if(bag.length === 0) refillBag();
+  const idx = bag.pop();
+  cardEl.classList.add('fade');
+  setTimeout(() => {
+    cardEl.textContent = IDEAS[idx].text;
+    tagEl.textContent = '— ' + IDEAS[idx].tag;
+    cardEl.classList.remove('fade');
+  }, 220);
+}
+</script>
+</body>
+</html>
 
