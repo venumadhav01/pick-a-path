@@ -1,1 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trivia Sprint — Pick a Path</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --bg:#161220; --surface:#221c30; --card:#2a2338; --text:#f7f1e8; --text-dim:#a89bb5; --amber:#ffb703; --amber-glow:#ffd166; }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    background:var(--bg); color:var(--text); font-family:'Space Grotesk',sans-serif;
+    min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:2rem 1rem;
+  }
+  .pixel{font-family:'Press Start 2P',monospace;}
+  a.back{ color:var(--text-dim); text-decoration:none; font-size:0.85rem; align-self:flex-start; margin-bottom:1.5rem;}
+  a.back:hover{ color:var(--amber-glow); }
+  h1{ font-size:1.1rem; color:var(--amber-glow); margin-bottom:0.3rem; }
+  .sub{ color:var(--text-dim); font-size:0.9rem; margin-bottom:1.2rem; text-align:center; }
+  .hud{ display:flex; gap:1.5rem; margin-bottom:1rem; font-size:0.9rem; }
+  .hud span{ color:var(--amber-glow); font-weight:700; }
+  #box{ width:min(92vw, 420px); background:var(--card); border-radius:12px; padding:1.6rem; }
+  #q{ font-size:1.05rem; margin-bottom:1.2rem; min-height:2.6rem; }
+  .opt{
+    display:block; width:100%; text-align:left; background:var(--surface); color:var(--text);
+    border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:0.7rem 1rem;
+    margin-bottom:0.6rem; cursor:pointer; font-family:'Space Grotesk',sans-serif; font-size:0.9rem;
+  }
+  .opt:hover{ border-color:var(--amber); }
+  .opt.correct{ background:#1f5c3c; border-color:#4ade80; }
+  .opt.wrong{ background:#5c1f2a; border-color:#f87171; }
+  #timerbar{ height:6px; background:rgba(255,255,255,0.08); border-radius:4px; margin-bottom:1rem; overflow:hidden; }
+  #timerfill{ height:100%; background:var(--amber); width:100%; transition:width 0.1s linear; }
+  #result{ text-align:center; font-size:1.1rem; color:var(--amber-glow); }
+  button{
+    margin-top:1rem; background:var(--amber); color:#1a1625; border:none;
+    padding:0.7rem 1.4rem; border-radius:8px; font-weight:700; cursor:pointer; font-size:0.9rem;
+  }
+  button:hover{ background:var(--amber-glow); }
+</style>
+</head>
+<body>
+<a class="back" href="../../index.html">← Back to hub</a>
+<h1 class="pixel">TRIVIA SPRINT</h1>
+<p class="sub">10 questions, 10 seconds each. Speed and accuracy both count.</p>
+<div class="hud"><div>Score: <span id="score">0</span></div><div>Question: <span id="qnum">1</span>/10</div></div>
+<div id="box">
+  <div id="timerbar"><div id="timerfill"></div></div>
+  <div id="q"></div>
+  <div id="opts"></div>
+</div>
 
+<script>
+const QUESTIONS = [
+  { q:"What year was the original arcade game Pong released?", opts:["1962","1972","1980","1985"], a:1 },
+  { q:"Which company created the Game Boy?", opts:["Sega","Sony","Nintendo","Atari"], a:2 },
+  { q:"In Snake, what typically happens if you run into your own tail?", opts:["You speed up","Game over","You shrink","Nothing"], a:1 },
+  { q:"What does '2048' refer to in the tile game?", opts:["Grid size","Time limit","Winning tile value","Number of moves"], a:2 },
+  { q:"Which of these is a classic maze-chase arcade game?", opts:["Pac-Man","Tetris","Pong","Frogger"], a:0 },
+  { q:"What shape are Tetris pieces collectively called?", opts:["Blocks","Tetrominoes","Squares","Fragments"], a:1 },
+  { q:"In most runner games, what usually ends the game?", opts:["Running out of time","Hitting an obstacle","Going too fast","Jumping too high"], a:1 },
+  { q:"Which console popularized the analog joystick controller?", opts:["NES","Game Boy","Nintendo 64","Atari 2600"], a:2 },
+  { q:"What's the term for temporary in-game boosts like speed or shields?", opts:["Power-ups","Cheat codes","Add-ons","Boosters"], a:0 },
+  { q:"Which of these is NOT typically a puzzle game?", opts:["Tetris","2048","Sudoku","Snake"], a:3 },
+];
+
+let idx, score, timer, timeLeft;
+const qEl = document.getElementById('q'), optsEl = document.getElementById('opts');
+const scoreEl = document.getElementById('score'), qnumEl = document.getElementById('qnum');
+const fillEl = document.getElementById('timerfill');
+const boxEl = document.getElementById('box');
+
+function start(){
+  idx = 0; score = 0; scoreEl.textContent = 0;
+  showQuestion();
+}
+
+function showQuestion(){
+  clearInterval(timer);
+  if(idx >= QUESTIONS.length){ finish(); return; }
+  qnumEl.textContent = idx+1;
+  const cur = QUESTIONS[idx];
+  qEl.textContent = cur.q;
+  optsEl.innerHTML = '';
+  cur.opts.forEach((opt, i) => {
+    const b = document.createElement('button');
+    b.className = 'opt';
+    b.textContent = opt;
+    b.onclick = () => answer(i);
+    optsEl.appendChild(b);
+  });
+  timeLeft = 100;
+  fillEl.style.width = '100%';
+  timer = setInterval(() => {
+    timeLeft -= 1;
+    fillEl.style.width = timeLeft + '%';
+    if(timeLeft <= 0){ clearInterval(timer); answer(-1); }
+  }, 100);
+}
+
+function answer(choice){
+  clearInterval(timer);
+  const cur = QUESTIONS[idx];
+  const buttons = optsEl.querySelectorAll('.opt');
+  buttons[cur.a].classList.add('correct');
+  if(choice !== -1 && choice !== cur.a){ buttons[choice].classList.add('wrong'); }
+  if(choice === cur.a){ score += Math.max(10, timeLeft); scoreEl.textContent = score; }
+  buttons.forEach(b => b.disabled = true);
+  setTimeout(() => { idx++; showQuestion(); }, 900);
+}
+
+function finish(){
+  boxEl.innerHTML = `<div id="result">🏁 Final score: ${score}</div>`;
+  const btn = document.createElement('button');
+  btn.textContent = 'Play again';
+  btn.onclick = () => { boxEl.innerHTML = `<div id="timerbar"><div id="timerfill" style="width:100%"></div></div><div id="q"></div><div id="opts"></div>`;
+    Object.assign(window, {});
+    // re-bind elements
+    location.reload();
+  };
+  boxEl.appendChild(btn);
+}
+
+start();
+</script>
+</body>
+</html>
