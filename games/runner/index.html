@@ -1,1 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Endless Runner — Pick a Path</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --bg:#161220; --surface:#221c30; --text:#f7f1e8; --text-dim:#a89bb5; --amber:#ffb703; --amber-glow:#ffd166; }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    background:var(--bg); color:var(--text); font-family:'Space Grotesk',sans-serif;
+    min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:2rem 1rem;
+  }
+  .pixel{font-family:'Press Start 2P',monospace;}
+  a.back{ color:var(--text-dim); text-decoration:none; font-size:0.85rem; align-self:flex-start; margin-bottom:1.5rem;}
+  a.back:hover{ color:var(--amber-glow); }
+  h1{ font-size:1.1rem; color:var(--amber-glow); margin-bottom:0.3rem; }
+  .sub{ color:var(--text-dim); font-size:0.9rem; margin-bottom:1rem; text-align:center; }
+  #score{ font-size:0.95rem; margin-bottom:0.8rem; }
+  #score span{ color:var(--amber-glow); font-weight:700; }
+  canvas{ background:var(--surface); border-radius:10px; max-width:95vw; touch-action:none; }
+  #msg{ margin-top:1rem; font-size:0.95rem; color:var(--amber-glow); min-height:1.4rem; text-align:center; }
+  button{
+    margin-top:0.8rem; background:var(--amber); color:#1a1625; border:none;
+    padding:0.7rem 1.4rem; border-radius:8px; font-weight:700; cursor:pointer; font-size:0.9rem;
+  }
+  button:hover{ background:var(--amber-glow); }
+  .hint{ color:var(--text-dim); font-size:0.75rem; margin-top:1.2rem; }
+</style>
+</head>
+<body>
+<a class="back" href="../../index.html">← Back to hub</a>
+<h1 class="pixel">ENDLESS RUNNER</h1>
+<p class="sub">Jump the obstacles. Speed climbs the longer you survive.</p>
+<div id="score">Score: <span id="s">0</span> &nbsp;|&nbsp; Best: <span id="b">0</span></div>
+<canvas id="c" width="480" height="220"></canvas>
+<div id="msg">Press Space / tap to jump — and to start</div>
+<button onclick="restart()">Restart</button>
+<p class="hint">Space / ↑ / tap to jump</p>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const sEl = document.getElementById('s'), bEl = document.getElementById('b'), msgEl = document.getElementById('msg');
+let best = parseInt(localStorage.getItem('runner-best') || '0');
+bEl.textContent = best;
+
+const groundY = 170;
+let player, obstacles, speed, score, over, started, raf, spawnTimer;
+
+function reset(){
+  player = { x:60, y:groundY-30, w:26, h:30, vy:0, grounded:true };
+  obstacles = [];
+  speed = 4.2; score = 0; over = false; started = false; spawnTimer = 0;
+  sEl.textContent = 0;
+  msgEl.textContent = 'Press Space / tap to jump — and to start';
+  draw();
+}
+
+function jump(){
+  if(over){ restart(); return; }
+  if(!started){ started = true; msgEl.textContent = ''; loop(); }
+  if(player.grounded){ player.vy = -10.5; player.grounded = false; }
+}
+
+function spawnObstacle(){
+  const h = 24 + Math.random()*26;
+  obstacles.push({ x: canvas.width + 10, y: groundY - h, w: 18 + Math.random()*10, h });
+}
+
+function loop(){
+  if(over) return;
+  score += 0.12;
+  speed = 4.2 + score * 0.035;
+  sEl.textContent = Math.floor(score);
+
+  player.vy += 0.55;
+  player.y += player.vy;
+  if(player.y >= groundY - player.h){ player.y = groundY - player.h; player.vy = 0; player.grounded = true; }
+
+  spawnTimer -= speed;
+  if(spawnTimer <= 0){ spawnObstacle(); spawnTimer = 70 + Math.random()*60; }
+
+  obstacles.forEach(o => o.x -= speed);
+  obstacles = obstacles.filter(o => o.x + o.w > -10);
+
+  for(const o of obstacles){
+    if(player.x < o.x + o.w && player.x + player.w > o.x && player.y < o.y + o.h && player.y + player.h > o.y){
+      over = true;
+      const finalScore = Math.floor(score);
+      if(finalScore > best){ best = finalScore; localStorage.setItem('runner-best', best); bEl.textContent = best; }
+      msgEl.textContent = `Game over — score ${finalScore}. Press Space / tap to retry.`;
+    }
+  }
+
+  draw();
+  if(!over) raf = requestAnimationFrame(loop);
+}
+
+function draw(){
+  ctx.fillStyle = '#221c30';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.strokeStyle = 'rgba(255,183,3,0.3)';
+  ctx.beginPath();
+  ctx.moveTo(0, groundY); ctx.lineTo(canvas.width, groundY);
+  ctx.stroke();
+
+  ctx.fillStyle = '#ffb703';
+  ctx.fillRect(player.x, player.y, player.w, player.h);
+
+  ctx.fillStyle = '#5eead4';
+  obstacles.forEach(o => ctx.fillRect(o.x, o.y, o.w, o.h));
+}
+
+function restart(){
+  cancelAnimationFrame(raf);
+  reset();
+}
+
+window.addEventListener('keydown', e => {
+  if(e.code === 'Space' || e.key === 'ArrowUp'){ e.preventDefault(); jump(); }
+});
+canvas.addEventListener('touchstart', e => { e.preventDefault(); jump(); });
+canvas.addEventListener('click', jump);
+
+reset();
+</script>
+</body>
+</html>
 
