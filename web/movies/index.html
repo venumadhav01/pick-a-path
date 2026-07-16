@@ -1,1 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Movie Discovery — Pick a Path</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --bg:#161220; --surface:#221c30; --card:#2a2338; --text:#f7f1e8; --text-dim:#a89bb5; --cyan:#5eead4; --cyan-glow:#8bf5e4; }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{ background:var(--bg); color:var(--text); font-family:'Space Grotesk',sans-serif; min-height:100vh; padding:2rem 1.2rem; }
+  .pixel{font-family:'Press Start 2P',monospace;}
+  .wrap{ max-width:820px; margin:0 auto; }
+  a.back{ color:var(--text-dim); text-decoration:none; font-size:0.85rem; }
+  a.back:hover{ color:var(--cyan-glow); }
+  h1{ font-size:1.1rem; color:var(--cyan-glow); margin:1rem 0 0.3rem; }
+  .sub{ color:var(--text-dim); margin-bottom:1.2rem; }
+  .keybox{
+    background:var(--card); border-radius:10px; padding:1rem 1.2rem; margin-bottom:1.5rem;
+    font-size:0.85rem; color:var(--text-dim);
+  }
+  .keybox a{ color:var(--cyan); }
+  .keybox input{
+    width:100%; margin-top:0.6rem; padding:0.6rem 0.8rem; border-radius:6px;
+    border:1px solid rgba(255,255,255,0.1); background:var(--surface); color:var(--text);
+  }
+  .search{ display:flex; gap:0.5rem; margin-bottom:1.5rem; }
+  .search input{
+    flex:1; padding:0.7rem 1rem; border-radius:8px; border:1px solid rgba(255,255,255,0.1);
+    background:var(--surface); color:var(--text); font-size:0.95rem;
+  }
+  .search button{ background:var(--cyan); color:#161220; border:none; padding:0.7rem 1.2rem; border-radius:8px; font-weight:700; cursor:pointer; }
+  .grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:1rem; }
+  .card{ background:var(--card); border-radius:10px; overflow:hidden; }
+  .card img{ width:100%; aspect-ratio:2/3; object-fit:cover; background:var(--surface); }
+  .card .info{ padding:0.7rem; }
+  .card h3{ font-size:0.85rem; margin-bottom:0.2rem; }
+  .card .year{ font-size:0.75rem; color:var(--text-dim); }
+  .status{ color:var(--text-dim); text-align:center; padding:2rem; }
+  .error{ color:#f87171; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../../index.html">← Back to hub</a>
+  <h1 class="pixel" style="font-size:1rem;">MOVIE DISCOVERY</h1>
+  <p class="sub">Search films with posters and ratings via the OMDb API.</p>
+
+  <div class="keybox">
+    This page needs a free OMDb API key (takes under a minute) —
+    <a href="https://www.omdbapi.com/apikey.aspx" target="_blank" rel="noopener">get one here</a>,
+    then paste it below. It's saved in this browser only.
+    <input id="key-input" type="text" placeholder="Paste your OMDb API key…">
+  </div>
+
+  <div class="search">
+    <input id="search-input" type="text" placeholder="Search for a movie…" value="Inception">
+    <button onclick="search()">Search</button>
+  </div>
+
+  <div class="grid" id="grid"><div class="status">Enter your API key above, then search.</div></div>
+</div>
+
+<script>
+const keyInput = document.getElementById('key-input');
+const searchInput = document.getElementById('search-input');
+const gridEl = document.getElementById('grid');
+
+keyInput.value = localStorage.getItem('omdb-key') || '';
+keyInput.addEventListener('change', () => localStorage.setItem('omdb-key', keyInput.value.trim()));
+
+async function search(){
+  const key = keyInput.value.trim();
+  const query = searchInput.value.trim();
+  if(!key){ gridEl.innerHTML = '<div class="status error">Add your OMDb API key above first.</div>'; return; }
+  if(!query){ return; }
+  gridEl.innerHTML = '<div class="status">Searching…</div>';
+  try{
+    const res = await fetch(`https://www.omdbapi.com/?apikey=${encodeURIComponent(key)}&s=${encodeURIComponent(query)}`);
+    const data = await res.json();
+    if(data.Response === 'False'){
+      gridEl.innerHTML = `<div class="status error">${data.Error || 'No results found.'}</div>`;
+      return;
+    }
+    gridEl.innerHTML = data.Search.map(m => `
+      <div class="card">
+        <img src="${m.Poster !== 'N/A' ? m.Poster : ''}" alt="${m.Title}" onerror="this.style.display='none'">
+        <div class="info">
+          <h3>${m.Title}</h3>
+          <div class="year">${m.Year}</div>
+        </div>
+      </div>
+    `).join('');
+  } catch(err){
+    gridEl.innerHTML = '<div class="status error">Something went wrong — check your key and connection.</div>';
+  }
+}
+
+searchInput.addEventListener('keydown', e => { if(e.key === 'Enter') search(); });
+</script>
+</body>
+</html>
 
