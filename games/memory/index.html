@@ -1,1 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Memory Match — Pick a Path</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --bg:#161220; --surface:#221c30; --card:#2a2338; --text:#f7f1e8; --text-dim:#a89bb5; --amber:#ffb703; --amber-glow:#ffd166; }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    background:var(--bg); color:var(--text); font-family:'Space Grotesk',sans-serif;
+    min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:2rem 1rem;
+  }
+  .pixel{font-family:'Press Start 2P',monospace;}
+  a.back{ color:var(--text-dim); text-decoration:none; font-size:0.85rem; align-self:flex-start; margin-bottom:1.5rem;}
+  a.back:hover{ color:var(--amber-glow); }
+  h1{ font-size:1.1rem; color:var(--amber-glow); margin-bottom:0.3rem; }
+  .sub{ color:var(--text-dim); font-size:0.9rem; margin-bottom:1rem; text-align:center; }
+  .hud{ display:flex; gap:1.5rem; margin-bottom:1.2rem; font-size:0.9rem; }
+  .hud span{ color:var(--amber-glow); font-weight:700; }
+  #grid{
+    display:grid; grid-template-columns:repeat(4,1fr); gap:10px;
+    width:min(92vw, 360px);
+  }
+  .card{
+    aspect-ratio:1; background:var(--card); border-radius:10px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:1.8rem; cursor:pointer; user-select:none;
+    transition:transform 0.2s ease, background 0.2s ease;
+  }
+  .card.flipped{ background:var(--surface); transform:scale(1.03); }
+  .card.matched{ background:#7a5e17; opacity:0.8; cursor:default; }
+  #msg{ margin-top:1.2rem; font-size:0.95rem; color:var(--amber-glow); min-height:1.4rem; text-align:center; }
+  button{
+    margin-top:0.8rem; background:var(--amber); color:#1a1625; border:none;
+    padding:0.7rem 1.4rem; border-radius:8px; font-weight:700; cursor:pointer; font-size:0.9rem;
+  }
+  button:hover{ background:var(--amber-glow); }
+</style>
+</head>
+<body>
+<a class="back" href="../../index.html">← Back to hub</a>
+<h1 class="pixel">MEMORY MATCH</h1>
+<p class="sub">Flip two cards at a time. Match all pairs in as few moves as possible.</p>
+<div class="hud"><div>Moves: <span id="moves">0</span></div><div>Matched: <span id="matched">0</span>/8</div></div>
+<div id="grid"></div>
+<div id="msg"></div>
+<button onclick="restart()">Restart</button>
 
+<script>
+const icons = ['🕹️','👾','🎮','🏆','⭐','🔥','💎','🎯'];
+const gridEl = document.getElementById('grid');
+const movesEl = document.getElementById('moves');
+const matchedEl = document.getElementById('matched');
+const msgEl = document.getElementById('msg');
+
+let cards, flipped, matchedCount, moves, locked;
+
+function shuffled(){
+  const deck = [...icons, ...icons];
+  for(let i=deck.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [deck[i],deck[j]] = [deck[j],deck[i]];
+  }
+  return deck;
+}
+
+function restart(){
+  cards = shuffled();
+  flipped = []; matchedCount = 0; moves = 0; locked = false;
+  movesEl.textContent = 0; matchedEl.textContent = 0; msgEl.textContent = '';
+  render();
+}
+
+function render(){
+  gridEl.innerHTML = '';
+  cards.forEach((icon, i) => {
+    const el = document.createElement('div');
+    el.className = 'card';
+    el.dataset.i = i;
+    el.textContent = '';
+    el.addEventListener('click', () => flip(i));
+    gridEl.appendChild(el);
+  });
+}
+
+function flip(i){
+  if(locked) return;
+  const el = gridEl.children[i];
+  if(el.classList.contains('flipped') || el.classList.contains('matched')) return;
+  el.classList.add('flipped');
+  el.textContent = cards[i];
+  flipped.push(i);
+
+  if(flipped.length === 2){
+    moves++; movesEl.textContent = moves;
+    locked = true;
+    const [a,b] = flipped;
+    if(cards[a] === cards[b]){
+      gridEl.children[a].classList.add('matched');
+      gridEl.children[b].classList.add('matched');
+      matchedCount++;
+      matchedEl.textContent = matchedCount;
+      flipped = []; locked = false;
+      if(matchedCount === icons.length){
+        msgEl.textContent = `🎉 Solved in ${moves} moves!`;
+      }
+    } else {
+      setTimeout(() => {
+        gridEl.children[a].classList.remove('flipped');
+        gridEl.children[a].textContent = '';
+        gridEl.children[b].classList.remove('flipped');
+        gridEl.children[b].textContent = '';
+        flipped = []; locked = false;
+      }, 700);
+    }
+  }
+}
+
+restart();
+</script>
+</body>
+</html>
